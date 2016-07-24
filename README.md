@@ -16,7 +16,7 @@ Response response = client.execute();
 ## Send POST Request
 
 ```java
-Request request = new Request("http://httpbin.org/put", RequestMethod.POST);
+Request request = new Request("http://httpbin.org/post", RequestMethod.POST);
 request.form("key1", "value1");
 HttpClient client = new HttpClient(request);
 Response response = client.execute();
