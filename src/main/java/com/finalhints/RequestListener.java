@@ -1,5 +1,7 @@
 package com.finalhints;
 
-public class RequestListener {
+public interface RequestListener {
+    void beforeRequest(Request request);
 
+    void onResponse(Response response);
 }
