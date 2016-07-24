@@ -6,18 +6,21 @@ import java.util.Map;
 public class Request {
 
     private String url;
-    private RequestMethod requestMethod;
+    private RequestMethod requestMethod = RequestMethod.GET;
+    static final String DEFAULT_CONTENT_TYPE = "application/x-www-form-urlencoded";
+    private String contentType;
     private String requestBody = null;
-    private Map<String, String> urlParams = new HashMap<String, String>();
+    private Map<String, Object> urlParams = new HashMap<String, Object>();
     private Map<String, Object> formParams = new HashMap<String, Object>();
     private Map<String, String> headers = new HashMap<String, String>();
 
     public Request(String url) {
 	this.url = url;
-	requestMethod = RequestMethod.GET;
+	contentType = DEFAULT_CONTENT_TYPE;
     }
 
     public Request(String url, RequestMethod requestMethod) {
+	this(url);
 	this.requestMethod = requestMethod;
     }
 
@@ -45,14 +48,6 @@ public class Request {
 	this.requestBody = requestBody;
     }
 
-    public Map<String, String> getUrlParams() {
-	return urlParams;
-    }
-
-    public void setUrlParams(Map<String, String> urlParams) {
-	this.urlParams = urlParams;
-    }
-
     public Map<String, Object> getFormParams() {
 	return formParams;
     }
@@ -67,5 +62,36 @@ public class Request {
 
     public void setHeaders(Map<String, String> headers) {
 	this.headers = headers;
+    }
+
+    public Map<String, Object> getUrlParams() {
+	return urlParams;
+    }
+
+    public void setUrlParams(Map<String, Object> urlParams) {
+	this.urlParams = urlParams;
+    }
+
+    public Request args(String key, Object value) {
+	urlParams.put(key, value);
+	return this;
+    }
+
+    public Request form(String string, Object value) {
+	formParams.put(string, value);
+	return this;
+    }
+
+    public Request header(String key, String value) {
+	headers.put(key, value);
+	return this;
+    }
+
+    public String getContentType() {
+	return contentType;
+    }
+
+    public void setContentType(String contentType) {
+	this.contentType = contentType;
     }
 }
