@@ -1,4 +1,4 @@
-# http-request
+# Http-Request
 Simple Http Library to make request and access the response.
 
 1. Create a Request Object
