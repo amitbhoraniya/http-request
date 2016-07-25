@@ -6,14 +6,18 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.finalhints.Request.RequestType;
 
 public class HttpClient {
 
@@ -30,42 +34,29 @@ public class HttpClient {
     public Response execute() {
 	beforeRequest();
 
-	RequestBuilder builder = new RequestBuilder(request);
 	URL obj;
 	try {
 
 	    // Create connection to URL
-	    String urlParams = builder.getUrlParams();
+	    String urlParams = urlEncodeUTF8(request.getUrlParams());
 	    if (urlParams.isEmpty())
-		obj = new URL(builder.getRequestURL());
+		obj = new URL(request.getUrl());
 	    else
-		obj = new URL(builder.getRequestURL() + "?" + builder.getUrlParams());
+		obj = new URL(request.getUrl() + "?" + urlParams);
 
 	    HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
 	    // Set Request Method
-	    con.setRequestMethod(builder.getRequestMethod());
+	    con.setRequestMethod(request.getRequestMethod().toString());
 
 	    // Set Headers
-	    Map<String, String> headers = builder.getHeaders();
+	    Map<String, String> headers = request.getHeaders();
 	    for (Entry<String, String> header : headers.entrySet()) {
 		con.setRequestProperty(header.getKey(), header.getValue());
 	    }
 
 	    // Request Body
-	    String requestBody = builder.getRequestBody();
-	    if (request.getContentType().equals(Request.DEFAULT_CONTENT_TYPE) && !requestBody.isEmpty()) {
-
-		con.setRequestProperty("Content-Type", Request.DEFAULT_CONTENT_TYPE);
-
-		// For RAW Request Body
-		con.setDoOutput(true);
-		DataOutputStream out = new DataOutputStream(con.getOutputStream());
-		out.writeBytes(requestBody);
-		out.flush();
-		out.close();
-
-	    } else if (!request.getFormParams().isEmpty()) {
+	    if (request.getRequestType().equals(RequestType.Form_Data) && !request.getFormParams().isEmpty()) {
 
 		// For Form Data
 		String twoHyphens = "--";
@@ -116,6 +107,28 @@ public class HttpClient {
 		dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
 		dos.flush();
 		dos.close();
+	    } else if (request.getRequestType().equals(RequestType.Form_Url_Encoded)
+		    && !request.getFormParams().isEmpty()) {
+
+		con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+
+		// For Form_URL_Encoded Request
+		con.setDoOutput(true);
+		DataOutputStream out = new DataOutputStream(con.getOutputStream());
+		out.writeBytes(urlEncodeUTF8(request.getFormParams()));
+		out.flush();
+		out.close();
+
+	    } else if (request.getRequestType().equals(RequestType.Raw) && request.getBody() != null
+		    && !request.getBody().isEmpty()) {
+		con.setRequestProperty("Content-Type", request.getContentType());
+
+		// For RAW Request Body
+		con.setDoOutput(true);
+		DataOutputStream out = new DataOutputStream(con.getOutputStream());
+		out.writeBytes(request.getBody());
+		out.flush();
+		out.close();
 	    }
 	    response.setStatusCode(con.getResponseCode());
 	    response.setResponseHeader(con.getHeaderFields());
@@ -127,12 +140,31 @@ public class HttpClient {
 	    }
 	    in.close();
 	    response.setResponseBody(buffer.toString());
-
 	} catch (IOException e) {
 	    e.printStackTrace();
 	}
 	onResponse();
 	return response;
+    }
+
+    static String urlEncodeUTF8(String s) {
+	try {
+	    return URLEncoder.encode(s, "UTF-8");
+	} catch (UnsupportedEncodingException e) {
+	    throw new UnsupportedOperationException(e);
+	}
+    }
+
+    static String urlEncodeUTF8(Map<?, ?> map) {
+	StringBuilder sb = new StringBuilder();
+	for (Map.Entry<?, ?> entry : map.entrySet()) {
+	    if (sb.length() > 0) {
+		sb.append("&");
+	    }
+	    sb.append(String.format("%s=%s", urlEncodeUTF8(entry.getKey().toString()),
+		    urlEncodeUTF8(entry.getValue().toString())));
+	}
+	return sb.toString();
     }
 
     public void registerListener(RequestListener listener) {

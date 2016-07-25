@@ -5,23 +5,71 @@ import java.util.Map;
 
 public class Request {
 
+    public enum RequestType {
+	Form_Data, Form_Url_Encoded, Raw;
+    }
+
     private String url;
     private RequestMethod requestMethod = RequestMethod.GET;
-    static final String DEFAULT_CONTENT_TYPE = "application/x-www-form-urlencoded";
-    private String contentType;
-    private String requestBody = null;
+    private RequestType requestType = RequestType.Form_Data;
+
+    static final String DEFAULT_CONTENT_TYPE = "text/plain; charset=UTF-8";
+    private String contentType = DEFAULT_CONTENT_TYPE;
+
     private Map<String, Object> urlParams = new HashMap<String, Object>();
     private Map<String, Object> formParams = new HashMap<String, Object>();
     private Map<String, String> headers = new HashMap<String, String>();
+    private String body = null;
 
     public Request(String url) {
 	this.url = url;
-	contentType = DEFAULT_CONTENT_TYPE;
     }
 
     public Request(String url, RequestMethod requestMethod) {
 	this(url);
 	this.requestMethod = requestMethod;
+    }
+
+    /**
+     * To specify requestBody of http request. If requestBody is specified then
+     * form parameters will be ignored. And default contentType is
+     * "text/plain; charset=UTF-8". To specify custom contentType like
+     * "application/json" use {@link #contentType(String)} method.
+     * 
+     * This method also sets requestType to Raw.
+     * 
+     * @param requestBody
+     * @return
+     */
+    public Request body(String requestBody) {
+	this.body = requestBody;
+	requestType = RequestType.Raw;
+	return this;
+    }
+
+    public String getContentType() {
+	return contentType;
+    }
+
+    public Request contentType(String contentType) {
+	this.contentType = contentType;
+	return this;
+    }
+
+    public RequestType getRequestType() {
+	return requestType;
+    }
+
+    /**
+     * Default {@link RequestType} is Form_Data Use this method to specify it to
+     * Form_Url_Encoded or Raw data.
+     * 
+     * @param requestType
+     * @return
+     */
+    public Request requestType(RequestType requestType) {
+	this.requestType = requestType;
+	return this;
     }
 
     public String getUrl() {
@@ -40,12 +88,12 @@ public class Request {
 	this.requestMethod = requestMethod;
     }
 
-    public String getRequestBody() {
-	return requestBody;
+    public Map<String, Object> getUrlParams() {
+	return urlParams;
     }
 
-    public void setRequestBody(String requestBody) {
-	this.requestBody = requestBody;
+    public void setUrlParams(Map<String, Object> urlParams) {
+	this.urlParams = urlParams;
     }
 
     public Map<String, Object> getFormParams() {
@@ -64,12 +112,12 @@ public class Request {
 	this.headers = headers;
     }
 
-    public Map<String, Object> getUrlParams() {
-	return urlParams;
+    public String getBody() {
+	return body;
     }
 
-    public void setUrlParams(Map<String, Object> urlParams) {
-	this.urlParams = urlParams;
+    public void setBody(String body) {
+	this.body = body;
     }
 
     public Request args(String key, Object value) {
@@ -87,11 +135,4 @@ public class Request {
 	return this;
     }
 
-    public String getContentType() {
-	return contentType;
-    }
-
-    public void setContentType(String contentType) {
-	this.contentType = contentType;
-    }
 }
