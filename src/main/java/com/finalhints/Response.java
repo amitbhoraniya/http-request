@@ -34,8 +34,8 @@ public class Response {
 
 	@Override
 	public String toString() {
-		return "Response [statusCode=" + statusCode + ", responseBody=" + responseBody + ", responseHeader="
-				+ responseHeader + "]";
+		return "Response [statusCode=" + statusCode + ", responseBody="
+				+ responseBody + ", responseHeader=" + responseHeader + "]";
 	}
 
 }

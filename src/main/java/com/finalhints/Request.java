@@ -10,6 +10,8 @@ public class Request {
 	}
 
 	private String url;
+	private boolean uncompress = false;
+	private boolean trustCert = false;
 	private RequestMethod requestMethod = RequestMethod.GET;
 	private RequestType requestType = RequestType.Form_Data;
 
@@ -34,9 +36,8 @@ public class Request {
 	 * To specify requestBody of http request. If requestBody is specified then
 	 * form parameters will be ignored. And default contentType is
 	 * "text/plain; charset=UTF-8". To specify custom contentType like
-	 * "application/json" use {@link #contentType(String)} method.
-	 * 
-	 * This method also sets requestType to Raw.
+	 * "application/json" use {@link #contentType(String)} method. This method
+	 * also sets requestType to Raw.
 	 * 
 	 * @param requestBody
 	 * @return
@@ -133,6 +134,29 @@ public class Request {
 	public Request header(String key, String value) {
 		headers.put(key, value);
 		return this;
+	}
+
+	public Request acceptGzipEncoding() {
+		headers.put("Accept-Encoding", "gzip");
+		return this;
+	}
+
+	public Request trustCert(boolean trustAllCert) {
+		this.trustCert = trustAllCert;
+		return this;
+	}
+
+	public Request uncompress(boolean uncompress) {
+		this.uncompress = uncompress;
+		return this;
+	}
+
+	public boolean isUncompress() {
+		return uncompress;
+	}
+
+	public boolean isTrustCert() {
+		return trustCert;
 	}
 
 }

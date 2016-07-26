@@ -5,23 +5,35 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.security.GeneralSecurityException;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.zip.GZIPInputStream;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import com.finalhints.Request.RequestType;
 
 public class HttpClient {
 
 	private static List<RequestListener> globalListeners = new ArrayList<RequestListener>();
+	private static SSLSocketFactory TRUSTED_FACTORY;
 	private List<RequestListener> localListeners = new ArrayList<RequestListener>();
 	private Request request;
 	private Response response;
@@ -46,6 +58,10 @@ public class HttpClient {
 
 			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
+			if (con instanceof HttpsURLConnection) {
+				((HttpsURLConnection) con)
+						.setSSLSocketFactory(getTrustedFactory());
+			}
 			// Set Request Method
 			con.setRequestMethod(request.getRequestMethod().toString());
 
@@ -56,20 +72,24 @@ public class HttpClient {
 			}
 
 			// Request Body
-			if (request.getRequestType().equals(RequestType.Form_Data) && !request.getFormParams().isEmpty()) {
+			if (request.getRequestType().equals(RequestType.Form_Data)
+					&& !request.getFormParams().isEmpty()) {
 
 				// For Form Data
 				String twoHyphens = "--";
-				String boundary = "*****" + Long.toString(System.currentTimeMillis()) + "*****";
+				String boundary = "*****"
+						+ Long.toString(System.currentTimeMillis()) + "*****";
 				String lineEnd = "\r\n";
 				int bytesRead, bytesAvailable, bufferSize;
 				byte[] buffer;
 				int maxBufferSize = 1 * 1024 * 1024;
 
-				con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+				con.setRequestProperty("Content-Type",
+						"multipart/form-data; boundary=" + boundary);
 				con.setRequestProperty("Connection", "Keep-Alive");
 				con.setDoOutput(true);
-				DataOutputStream dos = new DataOutputStream(con.getOutputStream());
+				DataOutputStream dos = new DataOutputStream(
+						con.getOutputStream());
 				Map<String, Object> params = request.getFormParams();
 				Iterator<String> keys = params.keySet().iterator();
 				while (keys.hasNext()) {
@@ -80,10 +100,14 @@ public class HttpClient {
 					if (value instanceof File) {
 						File file = (File) value;
 						FileInputStream fis = new FileInputStream(file);
-						dos.writeBytes("Content-Disposition: form-data; name=\"" + key + "\"; filename=\""
-								+ file.getName() + "\"" + lineEnd);
-						dos.writeBytes("Content-Type: " + URLConnection.guessContentTypeFromStream(fis) + lineEnd);
-						dos.writeBytes("Content-Transfer-Encoding: binary" + lineEnd);
+						dos.writeBytes("Content-Disposition: form-data; name=\""
+								+ key + "\"; filename=\"" + file.getName()
+								+ "\"" + lineEnd);
+						dos.writeBytes("Content-Type: "
+								+ URLConnection.guessContentTypeFromStream(fis)
+								+ lineEnd);
+						dos.writeBytes(
+								"Content-Transfer-Encoding: binary" + lineEnd);
 						dos.writeBytes(lineEnd);
 						bytesAvailable = fis.available();
 						bufferSize = Math.min(bytesAvailable, maxBufferSize);
@@ -92,12 +116,14 @@ public class HttpClient {
 						while (bytesRead > 0) {
 							dos.write(buffer, 0, bufferSize);
 							bytesAvailable = fis.available();
-							bufferSize = Math.min(bytesAvailable, maxBufferSize);
+							bufferSize = Math.min(bytesAvailable,
+									maxBufferSize);
 							bytesRead = fis.read(buffer, 0, bufferSize);
 						}
 						fis.close();
 					} else {
-						dos.writeBytes("Content-Disposition: form-data; name=\"" + key + "\"" + lineEnd);
+						dos.writeBytes("Content-Disposition: form-data; name=\""
+								+ key + "\"" + lineEnd);
 						dos.writeBytes("Content-Type: text/plain" + lineEnd);
 						dos.writeBytes(lineEnd);
 						dos.writeBytes(String.valueOf(value));
@@ -107,32 +133,41 @@ public class HttpClient {
 				dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
 				dos.flush();
 				dos.close();
-			} else if (request.getRequestType().equals(RequestType.Form_Url_Encoded)
+			} else if (request.getRequestType()
+					.equals(RequestType.Form_Url_Encoded)
 					&& !request.getFormParams().isEmpty()) {
 
-				con.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+				con.setRequestProperty("Content-Type",
+						"application/x-www-form-urlencoded");
 
 				// For Form_URL_Encoded Request
 				con.setDoOutput(true);
-				DataOutputStream out = new DataOutputStream(con.getOutputStream());
+				DataOutputStream out = new DataOutputStream(
+						con.getOutputStream());
 				out.writeBytes(urlEncodeUTF8(request.getFormParams()));
 				out.flush();
 				out.close();
 
-			} else if (request.getRequestType().equals(RequestType.Raw) && request.getBody() != null
+			} else if (request.getRequestType().equals(RequestType.Raw)
+					&& request.getBody() != null
 					&& !request.getBody().isEmpty()) {
-				con.setRequestProperty("Content-Type", request.getContentType());
+				con.setRequestProperty("Content-Type",
+						request.getContentType());
 
 				// For RAW Request Body
 				con.setDoOutput(true);
-				DataOutputStream out = new DataOutputStream(con.getOutputStream());
+				DataOutputStream out = new DataOutputStream(
+						con.getOutputStream());
 				out.writeBytes(request.getBody());
 				out.flush();
 				out.close();
 			}
 			response.setStatusCode(con.getResponseCode());
 			response.setResponseHeader(con.getHeaderFields());
-			BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream()));
+			InputStream is = con.getInputStream();
+			if (request.isUncompress())
+				is = new GZIPInputStream(is);
+			BufferedReader in = new BufferedReader(new InputStreamReader(is));
 			String inputLine;
 			StringBuffer buffer = new StringBuffer();
 			while ((inputLine = in.readLine()) != null) {
@@ -161,7 +196,8 @@ public class HttpClient {
 			if (sb.length() > 0) {
 				sb.append("&");
 			}
-			sb.append(String.format("%s=%s", urlEncodeUTF8(entry.getKey().toString()),
+			sb.append(String.format("%s=%s",
+					urlEncodeUTF8(entry.getKey().toString()),
 					urlEncodeUTF8(entry.getValue().toString())));
 		}
 		return sb.toString();
@@ -199,5 +235,30 @@ public class HttpClient {
 		for (RequestListener requestListener : localListeners) {
 			requestListener.onResponse(response);
 		}
+	}
+
+	private static SSLSocketFactory getTrustedFactory() {
+		if (TRUSTED_FACTORY == null) {
+			final TrustManager[] trustAllCerts = new TrustManager[]{
+					new X509TrustManager() {
+						public X509Certificate[] getAcceptedIssuers() {
+							return new X509Certificate[0];
+						}
+						public void checkClientTrusted(X509Certificate[] chain,
+								String authType) {
+						}
+						public void checkServerTrusted(X509Certificate[] chain,
+								String authType) {
+						}
+					}};
+			try {
+				SSLContext context = SSLContext.getInstance("TLS");
+				context.init(null, trustAllCerts, new SecureRandom());
+				TRUSTED_FACTORY = context.getSocketFactory();
+			} catch (GeneralSecurityException e) {
+				// To Do Security Exception
+			}
+		}
+		return TRUSTED_FACTORY;
 	}
 }
