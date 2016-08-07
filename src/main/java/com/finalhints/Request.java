@@ -13,13 +13,14 @@ public class Request {
 	private boolean uncompress = false;
 	private boolean trustCert = false;
 	private RequestMethod requestMethod = RequestMethod.GET;
-	private RequestType requestType = RequestType.Form_Data;
-
+	private RequestType requestType = RequestType.Form_Url_Encoded;
+	private ConnectionFactory connectionFactory = ConnectionFactory.DEFAULT_CONNECTION_FACTORY;
 	static final String DEFAULT_CONTENT_TYPE = "text/plain; charset=UTF-8";
 	private String contentType = DEFAULT_CONTENT_TYPE;
 
 	private Map<String, Object> urlParams = new HashMap<String, Object>();
 	private Map<String, Object> formParams = new HashMap<String, Object>();
+	private Map<String, Object> cookie = new HashMap<String, Object>();
 	private Map<String, String> headers = new HashMap<String, String>();
 	private String body = null;
 
@@ -62,8 +63,8 @@ public class Request {
 	}
 
 	/**
-	 * Default {@link RequestType} is Form_Data Use this method to specify it to
-	 * Form_Url_Encoded or Raw data.
+	 * Default {@link RequestType} is Form_Url_Encoded Use this method to
+	 * specify it to Form_Data or Raw data.
 	 * 
 	 * @param requestType
 	 * @return
@@ -113,6 +114,14 @@ public class Request {
 		this.headers = headers;
 	}
 
+	public Map<String, Object> getCookie() {
+		return cookie;
+	}
+
+	public void setCookie(Map<String, Object> cookie) {
+		this.cookie = cookie;
+	}
+
 	public String getBody() {
 		return body;
 	}
@@ -133,6 +142,11 @@ public class Request {
 
 	public Request header(String key, String value) {
 		headers.put(key, value);
+		return this;
+	}
+
+	public Request cookie(String key, String value) {
+		cookie.put(key, value);
 		return this;
 	}
 
@@ -159,4 +173,11 @@ public class Request {
 		return trustCert;
 	}
 
+	public ConnectionFactory getConnectionFactory() {
+		return connectionFactory;
+	}
+
+	public void setConnectionFactory(ConnectionFactory connectionFactory) {
+		this.connectionFactory = connectionFactory;
+	}
 }

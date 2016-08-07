@@ -7,6 +7,7 @@ public class Response {
 	private int statusCode;
 	private String responseBody;
 	private Map<String, List<String>> responseHeader;
+	private Exception exception = null;
 
 	public int getStatusCode() {
 		return statusCode;
@@ -30,6 +31,14 @@ public class Response {
 
 	public void setResponseHeader(Map<String, List<String>> map) {
 		this.responseHeader = map;
+	}
+
+	public Exception getException() {
+		return exception;
+	}
+
+	public void setException(Exception exception) {
+		this.exception = exception;
 	}
 
 	@Override

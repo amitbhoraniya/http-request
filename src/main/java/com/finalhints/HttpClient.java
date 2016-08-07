@@ -1,5 +1,7 @@
 package com.finalhints;
 
+import static com.finalhints.HttpUtils.urlEncodeUTF8;
+
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
@@ -7,11 +9,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
-import java.net.URLEncoder;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
@@ -29,7 +29,6 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import com.finalhints.Request.RequestType;
-
 public class HttpClient {
 
 	private static List<RequestListener> globalListeners = new ArrayList<RequestListener>();
@@ -38,17 +37,26 @@ public class HttpClient {
 	private Request request;
 	private Response response;
 
+	public HttpClient() {
+	}
+
 	HttpClient(Request request) {
 		this.request = request;
 		response = new Response();
+	}
+
+	HttpClient request(Request request) {
+		this.request = request;
+		response = new Response();
+		return this;
 	}
 
 	public Response execute() {
 		beforeRequest();
 
 		URL obj;
+		HttpURLConnection con = null;
 		try {
-
 			// Create connection to URL
 			String urlParams = urlEncodeUTF8(request.getUrlParams());
 			if (urlParams.isEmpty())
@@ -56,12 +64,14 @@ public class HttpClient {
 			else
 				obj = new URL(request.getUrl() + "?" + urlParams);
 
-			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+			// Open Connection
+			con = request.getConnectionFactory().openConnection(obj);
 
-			if (con instanceof HttpsURLConnection) {
+			if (con instanceof HttpsURLConnection && request.isTrustCert()) {
 				((HttpsURLConnection) con)
 						.setSSLSocketFactory(getTrustedFactory());
 			}
+
 			// Set Request Method
 			con.setRequestMethod(request.getRequestMethod().toString());
 
@@ -71,8 +81,24 @@ public class HttpClient {
 				con.setRequestProperty(header.getKey(), header.getValue());
 			}
 
+			if (!request.getCookie().isEmpty())
+				con.setRequestProperty("Cookie",
+						HttpUtils.generateCookie(request.getCookie()));;
+
 			// Request Body
-			if (request.getRequestType().equals(RequestType.Form_Data)
+			if (request.getRequestType().equals(RequestType.Form_Url_Encoded)
+					&& !request.getFormParams().isEmpty()) {
+
+				// For Form_URL_Encoded Request
+				con.setRequestProperty("Content-Type",
+						"application/x-www-form-urlencoded");
+				con.setDoOutput(true);
+				DataOutputStream out = new DataOutputStream(
+						con.getOutputStream());
+				out.writeBytes(urlEncodeUTF8(request.getFormParams()));
+				out.flush();
+				out.close();
+			} else if (request.getRequestType().equals(RequestType.Form_Data)
 					&& !request.getFormParams().isEmpty()) {
 
 				// For Form Data
@@ -133,28 +159,13 @@ public class HttpClient {
 				dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
 				dos.flush();
 				dos.close();
-			} else if (request.getRequestType()
-					.equals(RequestType.Form_Url_Encoded)
-					&& !request.getFormParams().isEmpty()) {
-
-				con.setRequestProperty("Content-Type",
-						"application/x-www-form-urlencoded");
-
-				// For Form_URL_Encoded Request
-				con.setDoOutput(true);
-				DataOutputStream out = new DataOutputStream(
-						con.getOutputStream());
-				out.writeBytes(urlEncodeUTF8(request.getFormParams()));
-				out.flush();
-				out.close();
-
 			} else if (request.getRequestType().equals(RequestType.Raw)
 					&& request.getBody() != null
 					&& !request.getBody().isEmpty()) {
-				con.setRequestProperty("Content-Type",
-						request.getContentType());
 
 				// For RAW Request Body
+				con.setRequestProperty("Content-Type",
+						request.getContentType());
 				con.setDoOutput(true);
 				DataOutputStream out = new DataOutputStream(
 						con.getOutputStream());
@@ -175,32 +186,28 @@ public class HttpClient {
 			}
 			in.close();
 			response.setResponseBody(buffer.toString());
+			onResponse();
 		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		onResponse();
-		return response;
-	}
-
-	static String urlEncodeUTF8(String s) {
-		try {
-			return URLEncoder.encode(s, "UTF-8");
-		} catch (UnsupportedEncodingException e) {
-			throw new UnsupportedOperationException(e);
-		}
-	}
-
-	static String urlEncodeUTF8(Map<?, ?> map) {
-		StringBuilder sb = new StringBuilder();
-		for (Map.Entry<?, ?> entry : map.entrySet()) {
-			if (sb.length() > 0) {
-				sb.append("&");
+			if (con != null && con.getErrorStream() != null) {
+				try {
+					InputStream is = con.getErrorStream();
+					BufferedReader in = new BufferedReader(
+							new InputStreamReader(is));
+					String inputLine;
+					StringBuffer buffer = new StringBuffer();
+					while ((inputLine = in.readLine()) != null) {
+						buffer.append(inputLine);
+					}
+					in.close();
+					response.setResponseBody(buffer.toString());
+				} catch (IOException e1) {
+					response.setException(e1);
+				}
+			} else {
+				response.setException(e);
 			}
-			sb.append(String.format("%s=%s",
-					urlEncodeUTF8(entry.getKey().toString()),
-					urlEncodeUTF8(entry.getValue().toString())));
 		}
-		return sb.toString();
+		return response;
 	}
 
 	public void registerListener(RequestListener listener) {
