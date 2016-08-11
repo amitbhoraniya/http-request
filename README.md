@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/amitbhoraniya/http-request.svg?branch=master)](https://travis-ci.org/amitbhoraniya/http-request)
+[![Dependency Status](https://www.versioneye.com/user/projects/57a441491dadcb004272d6b5/badge.svg)](https://www.versioneye.com/user/projects/57a441491dadcb004272d6b5)
+
 # Http Request
 Simple Http Library to make request and access the response.
 
