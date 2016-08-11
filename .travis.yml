@@ -5,4 +5,4 @@ jdk:
   - openjdk7
 
 script:
-  - ./gradlew check --stacktrace --info
+  - gradle test
