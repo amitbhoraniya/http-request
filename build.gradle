@@ -5,8 +5,19 @@ apply plugin: 'signing'
 group = "com.finalhints"
 archivesBaseName = "http-request"
 version = '1.0'
+sourceCompatibility = 1.7
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+
+ext {
+    if (!project.hasProperty('ossrhUsername')) {
+        ossrhUsername = ''
+    }
+
+    if (!project.hasProperty('ossrhPassword')) {
+        ossrhPassword = ''
+    }
+}
 
 repositories {
 	jcenter()
@@ -82,7 +93,7 @@ uploadArchives {
       beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
       repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-        authentication(userName: hasProperty('ossrhUsername')?ossrhUsername:'', password: hasProperty('ossrhPassword')?ossrhPassword:'')
+        authentication(userName: ossrhUsername, password: ossrhPassword)
       }
 
       pom.project {

@@ -40,12 +40,12 @@ public class HttpClient {
 	public HttpClient() {
 	}
 
-	HttpClient(Request request) {
+	public HttpClient(Request request) {
 		this.request = request;
 		response = new Response();
 	}
 
-	HttpClient request(Request request) {
+	public HttpClient request(Request request) {
 		this.request = request;
 		response = new Response();
 		return this;
