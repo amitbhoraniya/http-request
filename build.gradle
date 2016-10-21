@@ -1,5 +1,9 @@
 apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'signing'
 
+group = "com.finalhints"
+archivesBaseName = "http-request"
 version = 1.0
 
 repositories {
@@ -63,6 +67,50 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 artifacts {
     archives sourcesJar
     archives javadocJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+  repositories {
+    mavenDeployer {
+      beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+      repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+        authentication(userName: ossrhUsername, password: ossrhPassword)
+      }
+
+      pom.project {
+        name 'Http-Request'
+        packaging 'jar' 
+        description 'Simple Http Library to make request and access the response'
+        url 'https://github.com/amitbhoraniya/http-request'
+
+        scm {
+        	connection 'scm:git:https://github.com/amitbhoraniya/http-request.git'
+        	developerConnection 'scm:git:amitbhoraniya@github.com:your/http-request.git'
+        	url 'https://github.com/amitbhoraniya/http-request.git'
+        }
+
+        licenses {
+          license {
+            name 'The Apache License, Version 2.0'
+            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+          }
+        }
+
+        developers {
+          developer {
+            id 'amitbhoraniya'
+            name 'Amit Bhoraniya'
+            email 'amitbhoraniya007@gmail.com'
+          }
+        }
+      }
+    }
+  }
 }
 
 test{
