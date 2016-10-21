@@ -4,7 +4,9 @@ apply plugin: 'signing'
 
 group = "com.finalhints"
 archivesBaseName = "http-request"
-version = 1.0
+version = '1.0'
+
+ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
 repositories {
 	jcenter()
@@ -70,6 +72,7 @@ artifacts {
 }
 
 signing {
+    required { isReleaseVersion && gradle.taskGraph.hasTask("uploadArchives") }
     sign configurations.archives
 }
 
