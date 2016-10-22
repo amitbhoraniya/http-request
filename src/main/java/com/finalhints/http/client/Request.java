@@ -1,4 +1,4 @@
-package com.finalhints;
+package com.finalhints.http.client;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,8 +40,8 @@ public class Request {
 	 * "application/json" use {@link #contentType(String)} method. This method
 	 * also sets requestType to Raw.
 	 * 
-	 * @param requestBody
-	 * @return
+	 * @param requestBody processed {@link String} request data
+	 * @return {@link Request}
 	 */
 	public Request body(String requestBody) {
 		this.body = requestBody;
@@ -66,8 +66,8 @@ public class Request {
 	 * Default {@link RequestType} is Form_Url_Encoded Use this method to
 	 * specify it to Form_Data or Raw data.
 	 * 
-	 * @param requestType
-	 * @return
+	 * @param requestType target request type 
+	 * @return {@link Request}
 	 */
 	public Request requestType(RequestType requestType) {
 		this.requestType = requestType;

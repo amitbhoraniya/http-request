@@ -1,4 +1,4 @@
-package com.finalhints;
+package com.finalhints.http.client;
 
 public interface RequestListener {
 	void beforeRequest(Request request);

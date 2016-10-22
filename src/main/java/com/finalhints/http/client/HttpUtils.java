@@ -1,4 +1,4 @@
-package com.finalhints;
+package com.finalhints.http.client;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;

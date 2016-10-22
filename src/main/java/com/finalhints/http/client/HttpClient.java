@@ -1,6 +1,6 @@
-package com.finalhints;
+package com.finalhints.http.client;
 
-import static com.finalhints.HttpUtils.urlEncodeUTF8;
+import static com.finalhints.http.client.HttpUtils.urlEncodeUTF8;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -28,7 +28,7 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import com.finalhints.Request.RequestType;
+import com.finalhints.http.client.Request.RequestType;
 public class HttpClient {
 
 	private static List<RequestListener> globalListeners = new ArrayList<RequestListener>();

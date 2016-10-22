@@ -1,4 +1,4 @@
-package com.finalhints;
+package com.finalhints.http.client;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -7,7 +7,11 @@ import java.net.HttpURLConnection;
 
 import org.testng.annotations.Test;
 
-import com.finalhints.Request.RequestType;
+import com.finalhints.http.client.HttpClient;
+import com.finalhints.http.client.Request;
+import com.finalhints.http.client.RequestMethod;
+import com.finalhints.http.client.Response;
+import com.finalhints.http.client.Request.RequestType;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
